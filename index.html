@@ -219,17 +219,28 @@
         /* Wrapper ของป้ายวงกลม */
         .number-wrapper {
             position: absolute;
-            bottom: -120%; /* ซ่อนอยู่ลึกใต้บ่อ */
+            bottom: -150%; /* ซ่อนอยู่ลึกใต้บ่อ (ปรับให้ลึกขึ้นเพื่อเผื่อความสูงเสือ) */
             left: 50%;
             transform: translateX(-50%);
             width: 100%;
             display: flex;
-            justify-content: center;
+            flex-direction: column; /* เรียงเสืออยู่บน ป้ายอยู่ล่าง */
+            align-items: center;
             transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .number-wrapper.up {
             bottom: -5%; /* โผล่ขึ้นมาตรงกลางบ่อ */
+        }
+
+        /* ตกแต่งอิโมจิเสือ */
+        .tiger-emoji {
+            font-size: 3.5rem;
+            line-height: 1;
+            margin-bottom: -15px; /* ดึงให้เสือซ้อนอยู่หลังป้ายนิดๆ */
+            z-index: 1;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.8));
+            transition: transform 0.3s;
         }
 
         /* ป้ายวงกลมสีเนื้อ/เบจ ภายในหลุม */
@@ -248,6 +259,7 @@
             align-items: center;
             box-shadow: 0 4px 10px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,255,255,0.5);
             transition: all 0.3s;
+            z-index: 2; /* บังคับให้อยู่หน้าเสือเสมอ จะได้ไม่ทับตัวเลข */
         }
 
         /* เปลี่ยนสีป้ายเมื่อตอบ */
@@ -290,6 +302,11 @@
         body.ar-mode .number-wrapper.up {
             opacity: 1;
             transform: translateX(-50%) scale(1) translateY(0);
+        }
+
+        body.ar-mode .tiger-emoji {
+            font-size: 4.5rem;
+            margin-bottom: -20px;
         }
         
         body.ar-mode .the-number {
@@ -620,16 +637,25 @@
                 const rim = document.createElement('div'); rim.className = 'well-rim';
                 const hole = document.createElement('div'); hole.className = 'well-hole';
                 const numberWrapper = document.createElement('div'); numberWrapper.className = 'number-wrapper';
+                
+                // สร้างอิโมจิเสือ
+                const tiger = document.createElement('div'); 
+                tiger.className = 'tiger-emoji'; 
+                tiger.textContent = '🐯';
+
                 const textSpan = document.createElement('div'); textSpan.className = 'the-number'; textSpan.textContent = '0';
                 
-                numberWrapper.appendChild(textSpan); hole.appendChild(numberWrapper);
+                // ใส่เสือ และป้ายคำตอบ ลงใน wrapper (เสือจะอยู่บน ป้ายอยู่ล่าง)
+                numberWrapper.appendChild(tiger);
+                numberWrapper.appendChild(textSpan); 
+                hole.appendChild(numberWrapper);
                 container.appendChild(rim); container.appendChild(hole); boardEl.appendChild(container);
 
                 // Touch & Mouse Support
                 container.addEventListener('mousedown', (e) => handleWellClick(i, e));
                 container.addEventListener('touchstart', (e) => { e.preventDefault(); handleWellClick(i, e); }, {passive: false});
                 
-                wellElements.push({ value: 0, wrapper: numberWrapper, text: textSpan, container: container });
+                wellElements.push({ value: 0, wrapper: numberWrapper, text: textSpan, container: container, tiger: tiger });
             }
         }
 
@@ -660,19 +686,19 @@
             if (!isPlaying || !isWaitingForInput) return;
             isWaitingForInput = false;
             
-            const wData = wellElements[index];
-            const rect = wData.container.getBoundingClientRect();
-            const x = rect.left + rect.width / 2 - 20; const y = rect.top + rect.height / 2 - 20;
+            const y = rect.top + rect.height / 2 - 20;
 
             if (wData.value === currentAnswer) {
                 playSound('correct'); stats.correct++; score += 10;
                 document.getElementById('score').textContent = score;
                 wData.wrapper.classList.add('correct');
+                wData.tiger.textContent = '😺'; // เปลี่ยนหน้าเสือดีใจ
                 createStars(x, y); createFloatingText('+10', x, y - 20, '#4ade80');
             } else {
                 playSound('wrong'); stats.wrong++; hearts--;
                 updateHeartsUI();
                 wData.wrapper.classList.add('wrong'); document.body.classList.add('shake');
+                wData.tiger.textContent = '🙀'; // เปลี่ยนหน้าเสือตกใจ
                 createFloatingText('ผิด!', x, y - 20, '#f87171');
                 setTimeout(() => document.body.classList.remove('shake'), 400);
             }
@@ -845,6 +871,7 @@
             for (let i = 0; i < 6; i++) {
                 const w = wellElements[i];
                 w.value = choices[i]; w.text.textContent = choices[i];
+                w.tiger.textContent = '🐯'; // รีเซ็ตหน้าเสือ
                 w.wrapper.classList.remove('correct', 'wrong');
                 w.wrapper.classList.add('up');
             }
